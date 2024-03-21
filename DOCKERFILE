@@ -1,0 +1,20 @@
+# Generate workable requirements.txt from Poetry dependencies 
+FROM python:3.12-slim as requirements 
+
+RUN apt-get install -y --no-install-recommends build-essential gcc 
+RUN python -m pip install --no-cache-dir --upgrade poetry 
+
+COPY pyproject.toml poetry.lock ./ 
+RUN poetry export -f requirements.txt --without-hashes -o /src/requirements.txt 
+
+#​ Final app image 
+FROM python:3.12-slim as webapp 
+
+#​ Switching to non-root user appuser 
+RUN adduser appuser 
+WORKDIR /home/appuser 
+USER appuser:appuser 
+
+#​ Install requirements 
+COPY --from=requirements /src/requirements.txt . 
+RUN pip install --no-cache-dir --user -r requirements.txt
